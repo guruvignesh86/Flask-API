@@ -5,7 +5,8 @@ from flask_cors import CORS
 app = Flask(__name__)
 
 # Enable CORS with proper settings
-CORS(app, resources={r"/expenses/*": {"origins": "*"}}, supports_credentials=True)
+# CORS(app, resources={r"/expenses/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}}, supports_credentials=True)
 
 # Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/expenses'
@@ -21,6 +22,18 @@ class Expense(db.Model):
     category = db.Column(db.String(100), nullable=False)
     date = db.Column(db.String(20), nullable=False)
     payment_type = db.Column(db.String(20), nullable=False)
+    
+    # Admin Model (added to existing DB)
+class Admin(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+
+class FinanceAdmin(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+
 
 # Create the database tables
 with app.app_context():
@@ -31,10 +44,10 @@ def hello_world():
     return "<p>Hello, World!</p>"
 
 # Handle CORS preflight requests explicitly
-@app.route('/expenses', methods=['OPTIONS'])
-@app.route('/expenses/<int:id>', methods=['OPTIONS'])
-def handle_options(*args, **kwargs):
-    return '', 204
+# @app.route('/expenses', methods=['OPTIONS'])
+# @app.route('/expenses/<int:id>', methods=['OPTIONS'])
+# def handle_options(*args, **kwargs):
+#     return '', 204
 
 # Route to get all expenses
 @app.route('/expenses', methods=['GET'])
@@ -89,6 +102,36 @@ def update_expense(id):
     expense.payment_type = data['payment_type']
     db.session.commit()
     return jsonify({"message": "Expense updated successfully"})
+
+
+@app.route('/login', methods=['POST'])
+def admin_login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+   
+
+    admin = Admin.query.filter_by(username=username, password=password).first()
+
+    if admin:
+        return jsonify({"success": True}), 200
+    else:
+        return jsonify({"success": False, "message": "Invalid credentials"}), 401
+    
+@app.route('/FinanceLogin', methods=['POST'])
+def F_login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+   
+
+    admin = FinanceAdmin.query.filter_by(username=username, password=password).first()
+
+    if admin:
+        return jsonify({"success": True}), 200
+    else:
+        return jsonify({"success": False, "message": "Invalid credentials"}), 401
+
 
 
 if __name__ == '__main__':
